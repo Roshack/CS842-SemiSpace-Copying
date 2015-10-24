@@ -58,6 +58,21 @@ typedef size_t ggc_size_t;
 /* an empty defined for all the various conditions in which empty defines are necessary */
 #define GGGGC_EMPTY
 
+extern int ggggc_forceCollect;
+
+// Check if an object has already been moved
+long unsigned int alreadyMoved(void * x);
+
+// Forward an object
+void forward(void * from, void * to);
+
+// Return thej cleaned forward address for the moved object at x.
+void * cleanForwardAddress(void * x);
+
+// Process objects
+void ggggc_process();
+
+
 /* GC pool (forms a list) */
 struct GGGGC_Pool {
     /* the next pool in this generation */

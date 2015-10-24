@@ -42,10 +42,6 @@
 #include <sys/mman.h>
 #endif
 
-/* REMOVE THIS FOR SUBMISSION! */
-#include <gc.h>
-/* --- */
-
 #include "ggggc/gc.h"
 #include "ggggc-internals.h"
 
@@ -154,12 +150,50 @@ void ggggc_freeGeneration(struct GGGGC_Pool *pool)
     freePoolsTail = pool;
 }
 
+/* Function when allocating an object to zero out all
+   it's internal space past the header */
+void ggggc_zero_object(struct GGGGC_Header *hdr)
+{
+    ggc_size_t size = hdr->descriptor__ptr->size - GGGGC_WORD_SIZEOF(*hdr);
+    ggc_size_t i = 0;
+    ggc_size_t * iter = ((ggc_size_t *) hdr) + 1;
+    while (i < size) {
+        iter[0] = 0;
+        iter = iter + 1;
+        i++;
+    }
+    return;
+}
+
 /* allocate an object */
 void *ggggc_malloc(struct GGGGC_Descriptor *descriptor)
 {
-    /* FILLME */
     GGC_YIELD();
-    return GC_MALLOC(descriptor->size * sizeof(void*));
+    void * userPtr = NULL;
+    struct GGGGC_Header header;
+    header.descriptor__ptr = descriptor;
+    if (!ggggc_curPool) {
+        ggggc_curPool = ggggc_fromList = newPool(1);
+        ggggc_toList = newPool(1);
+        ggggc_forceCollect = 0;
+    }
+
+    ggc_size_t size = descriptor->size;
+    if (ggggc_curPool->free + size >= ggggc_curPool->end) {
+        if (ggggc_curPool->next) {
+            return ggggc_malloc(descriptor);
+        }
+        struct GGGGC_Pool *temp = newPool(1);
+        ggggc_curPool->next = temp;
+        ggggc_curPool = temp;
+        ggggc_forceCollect = 1;
+    }
+    userPtr = (ggggc_curPool->free);
+    ggggc_curPool->free += size;
+    ((struct GGGGC_Header *) userPtr)[0] = header;
+    ggggc_zero_object((struct GGGGC_Header*)userPtr);
+    //printf("Allocating user pointer at %lx\r\n", (long unsigned int) userPtr);
+    return userPtr;
 }
 
 struct GGGGC_Array {

@@ -12,6 +12,8 @@ BTOBJS=binary_trees_td.o
 BTGCOBJS=binary_trees_gc_td.o
 BTGGGGCOBJS=binary_trees_ggggc_td.o
 
+PROJTEST = project1-test.o
+
 BADLLLOBJS=badlll.o
 
 REMEMBEROBJS=remember.o
@@ -33,6 +35,9 @@ btggggc: $(BTGGGGCOBJS)
 
 badlll: $(BADLLLOBJS)
 	$(LD) $(CFLAGS) $(LDFLAGS) $(BADLLLOBJS) $(GGGGC_LIBS) $(LIBS) -o badlll
+
+projecttest: $(PROJTEST)
+	$(LD) $(CFLAGS) $(LDFLAGS) $(PROJTEST) $(GGGGC_LIBS) $(LIBS) -o projecttest
 
 remember: $(REMEMBEROBJS)
 	$(LD) $(CFLAGS) $(LDFLAGS) $(REMEMBEROBJS) $(GGGGC_LIBS) $(LIBS) -o remember

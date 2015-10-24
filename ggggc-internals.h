@@ -29,7 +29,8 @@ extern "C" {
 void ggggc_collect();
 
 /* the pools are thread-local */
-extern struct GGGGC_Pool *ggggc_poolList;
+extern struct GGGGC_Pool *ggggc_fromList;
+extern struct GGGGC_Pool *ggggc_toList;
 
 /* the current allocation pool */
 extern struct GGGGC_Pool *ggggc_curPool;
