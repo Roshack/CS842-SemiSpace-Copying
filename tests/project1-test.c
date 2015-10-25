@@ -72,8 +72,10 @@ int main(int argc, char* argv[])
     int i = 0;
     //3000000
     for (i = 0; i < 3000000; i++) {
+        //printf("Where am I %d\r\n", i);
         DestroyMyInsides();
     }
+    printf("Where am I\r\n");
     x = NewTreeNode(y,z,5);
     DestroyMyInsides();
     y = NewTreeNode(x,z,12);
@@ -83,6 +85,7 @@ int main(int argc, char* argv[])
     GGC_WP(y,right,x);
     GGC_WP(y,left,x);
     y = NULL;
+    printf("Where am I\r\n");
     y = NewTreeNode(x,x,2);
     z = NewTreeNode(x,y,5);
     z = NewTreeNode(x,y,5);

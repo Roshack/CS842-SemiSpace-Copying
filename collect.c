@@ -75,18 +75,11 @@ void ggggc_updateRefs()
 {
     // Update all references in our new from list.
     struct GGGGC_Pool *poolIter = ggggc_fromList;
-    // Use lastIteration to iterate until we hit current pool since
-    // we don't want to just iter til we hit the last pool as it could be
-    // much further than current pool actually is.
-    int lastIteration = 0;
-    while(!lastIteration) {
+    while(poolIter) {
         ggc_size_t * objIter = poolIter->start;
-        // If we're at cur pool stop after this iteration.
-        if (poolIter == ggggc_curPool) {
-            lastIteration = 1;
-        }
         while (objIter < poolIter->free && objIter) {
             // In from space no descriptor pointers should be incorrect...
+            //printf("objiter is %lx\r\n", (long unsigned int) objIter);
             struct GGGGC_Descriptor *descriptor = ((struct GGGGC_Header *) objIter)->descriptor__ptr;
             if (alreadyMoved(descriptor)) {
                 ((struct GGGGC_Header *)objIter)->descriptor__ptr = (struct GGGGC_Descriptor *) cleanForwardAddress(descriptor);
@@ -114,6 +107,21 @@ void ggggc_updateRefs()
         }
         poolIter = poolIter->next;
     }
+    struct GGGGC_PointerStack *stack_iter = ggggc_pointerStack;
+    while (stack_iter) {
+        struct GGGGC_Header *** ptrptr = (struct GGGGC_Header ***) stack_iter->pointers;
+        ggc_size_t ptrIter = 0;
+        while (ptrIter < stack_iter->size) {
+            if (*ptrptr[ptrIter]) {
+                struct GGGGC_Header *header= *ptrptr[ptrIter];
+                if (alreadyMoved((void*) header)) {
+                    *ptrptr[ptrIter] = (struct GGGGC_Header *) cleanForwardAddress(header);
+                }                
+            }
+            ptrIter++;               
+        }
+        stack_iter = stack_iter->next;
+    }
 }
 
 /* run a collection */
@@ -129,10 +137,10 @@ void ggggc_collect()
         struct GGGGC_Header *** ptrptr = (struct GGGGC_Header ***) stack_iter->pointers;
         ggc_size_t ptrIter = 0;
         while (ptrIter < stack_iter->size) {
-            printf("ptrIter is %ld and stackiter size is %ld\r\n", (long unsigned int) ptrIter, (long unsigned int) stack_iter->size);
+            //printf("ptrIter is %ld and stackiter size is %ld\r\n", (long unsigned int) ptrIter, (long unsigned int) stack_iter->size);
             if (*ptrptr[ptrIter]) {
                 struct GGGGC_Header *header= *ptrptr[ptrIter];
-                printf(" I'm in an infinite loop lol!\r\n");
+                //printf(" I'm in an infinite loop lol!\r\n");
                 if (!alreadyMoved((void*) header)) {
                     StackLL_Push((void *) header);
                     ggggc_process();
@@ -140,6 +148,7 @@ void ggggc_collect()
             }
             ptrIter++;               
         }
+        stack_iter = stack_iter->next;
     }
     // Now swap our lists
     struct GGGGC_Pool *temp = ggggc_toList;
@@ -158,11 +167,13 @@ void ggggc_collect()
 
 void forward(void * from, void * to)
 {
+    //printf("Forwarding %lx to %lx\r\n", (long unsigned int) from, (long unsigned int) to);
     struct GGGGC_Header * fromRef = (struct GGGGC_Header *) from;
     struct GGGGC_Header * toRef = (struct GGGGC_Header *) to;
     struct GGGGC_Descriptor * descriptor = fromRef->descriptor__ptr;
     memcpy(toRef,fromRef,descriptor->size);
     fromRef->descriptor__ptr = (struct GGGGC_Descriptor *) ( ((long unsigned int) toRef) | 1L);
+    //printf("Desc ptr was %lx now is %lx\r\n", (long unsigned int) descriptor, (long unsigned int) fromRef->descriptor__ptr);
     //printf("lol am I forwarding %lx to %lx?\r\n", (long unsigned int) fromRef, (long unsigned int) toRef);
     //printf("Forwarded descriptor ptr is %lx\r\n", (long unsigned int) fromRef->descriptor__ptr);
     
@@ -173,6 +184,8 @@ long unsigned int alreadyMoved(void * x) {
     // then this object has been moved (and that's not a descriptor ptr but a forward address)
     //printf("trying to check if object at %lx has already moved its desc ptr is %lx\r\n", (long unsigned int) x, (long unsigned int) ((struct GGGGC_Header *) x)->descriptor__ptr);
     //printf("%ld is the bitwise and\r\n", (long unsigned int) ((struct GGGGC_Header *) x)->descriptor__ptr & 1L);
+    //printf("Trying to check if %lx has already moved \r\n", (long unsigned int) x);
+    //printf("it has descriptor ptr of %lx\r\n",(long unsigned int) ((struct GGGGC_Header *) x)->descriptor__ptr );
     return (long unsigned int) ((struct GGGGC_Header *) x)->descriptor__ptr & 1L;
 }
 
@@ -241,10 +254,10 @@ int ggggc_yield()
     /* FILLME */
     //printf("Going to yield\r\n");
     if (ggggc_forceCollect) {
-        //printf("going to collect\r\n");
+        printf("going to collect\r\n");
         ggggc_collect();
         ggggc_forceCollect = 0;    
-        //printf("Done collecting\r\n");
+        printf("Done collecting\r\n");
     }
     return 0;
 }

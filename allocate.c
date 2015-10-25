@@ -154,12 +154,15 @@ void ggggc_freeGeneration(struct GGGGC_Pool *pool)
    it's internal space past the header */
 void ggggc_zero_object(struct GGGGC_Header *hdr)
 {
+    /*
+    if (hdr->descriptor__ptr->size == 0) {
+        return; // Why would we allocate object of size 0? stop it.
+    }*/
     ggc_size_t size = hdr->descriptor__ptr->size - GGGGC_WORD_SIZEOF(*hdr);
     ggc_size_t i = 0;
     ggc_size_t * iter = ((ggc_size_t *) hdr) + 1;
     while (i < size) {
-        iter[0] = 0;
-        iter = iter + 1;
+        iter[i] = 0;
         i++;
     }
     return;
@@ -181,6 +184,7 @@ void *ggggc_malloc(struct GGGGC_Descriptor *descriptor)
     ggc_size_t size = descriptor->size;
     if (ggggc_curPool->free + size >= ggggc_curPool->end) {
         if (ggggc_curPool->next) {
+            ggggc_curPool = ggggc_curPool->next;
             return ggggc_malloc(descriptor);
         }
         struct GGGGC_Pool *temp = newPool(1);
