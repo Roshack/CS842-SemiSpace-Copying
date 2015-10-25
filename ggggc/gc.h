@@ -54,23 +54,29 @@ typedef size_t ggc_size_t;
 #define GGGGC_POOL_OF(ptr) ((struct GGGGC_Pool *) ((ggc_size_t) (ptr) & GGGGC_POOL_OUTER_MASK))
 #define GGGGC_BITS_PER_WORD (8*sizeof(ggc_size_t))
 #define GGGGC_WORDS_PER_POOL (GGGGC_POOL_BYTES/sizeof(ggc_size_t))
+#define lui (long unsigned int)
 
 /* an empty defined for all the various conditions in which empty defines are necessary */
 #define GGGGC_EMPTY
+
 
 extern int ggggc_forceCollect;
 
 // Check if an object has already been moved
 long unsigned int alreadyMoved(void * x);
 
+
+// Scan a worklist object
+void scan(void *x);
+
 // Forward an object
-void forward(void * from, void * to);
+void * forward(void * from);
 
 // Return thej cleaned forward address for the moved object at x.
 void * cleanForwardAddress(void * x);
 
 // Process objects
-void ggggc_process();
+void ggggc_process(void * x);
 
 
 /* GC pool (forms a list) */
